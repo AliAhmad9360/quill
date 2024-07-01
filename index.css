@@ -1,0 +1,18 @@
+#editor-container{
+    width: 60%;
+}
+.wrapper{
+    display: flex;
+    justify-content: space-between;
+}
+.black-frame {
+    width: 100%;
+    background-color: black;
+    border: none;
+}
+
+.custom-button{
+    background: transparent;
+    border: 1px solid red;
+    border-radius: 25px;
+}
