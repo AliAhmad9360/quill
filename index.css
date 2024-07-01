@@ -16,3 +16,18 @@
     border: 1px solid red;
     border-radius: 25px;
 }
+
+.save-button{
+    margin-top: 10px;
+    padding: 5px 20px;
+    background: transparent;
+    border: 1px solid red;
+    border-radius: 20px;
+    cursor: pointer;
+    outline: none;
+}
+.save-button:hover{
+    background: black;
+    color: #FFF;
+    transition: .3s ease-in;
+}

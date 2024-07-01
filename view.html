@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saved Quill State</title>
+    <style>
+        .ql-hidden {
+            display: none;
+        }
+    </style>
+    <link href="./index.css" rel="stylesheet">
+</head>
+
+<body>
+    <button onclick="handleEdit()">Edit</button>
+    <div class="wrapper">
+        <div id="editor"></div>
+        <div>
+            <iframe class="black-frame" id="external-player"></iframe>
+            <div id="moments"></div>
+        </div>
+
+    </div>
+    <script>
+        const momentsList = [];
+        setTimeout(() => {
+            document.querySelectorAll('.custom-button').forEach(async item => {
+                item.onclick = playVideo
+                const videoId = item.getAttribute('video-id');
+                // const moment = { videoId, timestamp: , title:  };
+                
+                const button = document.createElement('button');
+                button.innerText = `${await getTitle(videoId)} ${item.innerHTML}`
+                button.setAttribute('class', 'custom-button')
+                button.setAttribute('video-id', videoId);
+                button.setAttribute('video-timestamp', item.getAttribute('video-timestamp'))
+                button.onclick=playVideo
+
+                document.getElementById('moments').appendChild(button);
+            })
+        }, 1000)
+        const data = localStorage.getItem('editor');
+        document.getElementById('editor').innerHTML = data.replaceAll('contenteditable="true"', '')
+        function handleEdit() {
+            localStorage.setItem('edit', 'true')
+            window.location.href = '/index.html'
+        }
+        function playVideo(event) {
+            const { target } = event;
+            const videoId = target.getAttribute('video-id');
+            const timestamp = target.getAttribute('video-timestamp')
+            const iframe = document.getElementById("external-player");
+            const url = `https://www.youtube.com/embed/${videoId}?start=${timestamp}&autoplay=1`
+            iframe.src = url;
+        }
+        
+        async function getTitle(videoId) {
+            const apiKey = 'AIzaSyAFbbDi0hl_kY46sVKg1opgTuUoO7ZXBTw';
+            const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${apiKey}`
+            const response = await fetch(url);
+            const resp = await response.json()
+            if (resp.items && resp.items.length > 0) {
+                return resp.items[0].snippet.title
+            }
+            return 'Untitled'
+        }
+    </script>
+</body>
+
+</html>

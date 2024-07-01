@@ -9,14 +9,23 @@ document.addEventListener('DOMContentLoaded', (event) => {
             // ]
         }
     });
+    if(localStorage.getItem('edit') === 'true'){
+        const data = localStorage.getItem('editor');
+        const delta = quill.clipboard.convert(data);
+        quill.setContents(delta, 'silent');
+        localStorage.removeItem('edit');
+    }
+
 
 
     class ButtonBlot extends Inline {
         static create(value) {
             let node = super.create();
             node.setAttribute('contenteditable', false);
-            node.style.display = 'inline'; // Ensure button is inline
+            node.style.display = 'inline';
             node.innerHTML = value.text
+            node.setAttribute('video-id', value.videoId)
+            node.setAttribute('video-timestamp', value.timestamp)
             node.addEventListener('click', () => playVideo(value.videoId, value.timestamp))
             return node;
             // let node = super.create();
@@ -99,3 +108,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
         iframe.src = url;
     }
 });
+function handleSave(){
+    const editor = document.getElementById('editor')
+    localStorage.setItem('editor', editor.innerHTML);
+}
