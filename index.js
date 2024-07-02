@@ -75,6 +75,8 @@ document.addEventListener('DOMContentLoaded', (event) => {
         localStorage.removeItem('edit');
     }
     function getQuillContents(){
+        debugger
+        
         const selection = quill.getSelection();
         var clipboardContent;
         if(selection){
@@ -84,7 +86,10 @@ document.addEventListener('DOMContentLoaded', (event) => {
             clipboardContent = quill.getContents();
         }
         clipboardContent = JSON.parse(JSON.stringify(clipboardContent));
-        clipboardContent = clipboardContent?.ops?.map(ops => {
+        clipboardContent = clipboardContent?.ops?.map((ops, index) => {
+            if(clipboardContent?.ops?.length - 1 === index){
+                ops.insert = ops.insert.replace('\n', '')
+            }
             if(ops.attributes && ops.attributes.button) return ops.attributes.button.url
             else if(ops.insert) return ops.insert;
             else return ops
