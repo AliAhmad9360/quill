@@ -51,7 +51,11 @@ document.addEventListener('DOMContentLoaded', (event) => {
     event.preventDefault();
     const contents = getQuillContents()
     quill.focus();
-    const position = quill.getSelection()?.index
+    // let position = quill.getSelection().index;
+    const position = getAdjustedCursorPosition(quill.getSelection())
+   
+
+
     var clipboardData = event.clipboardData || window.clipboardData;
     const copiedCotents = clipboardData.getData('Text');
     var dataToPaste = contents.substring(0, position) + copiedCotents + contents.substring(position);
@@ -104,6 +108,18 @@ document.addEventListener('DOMContentLoaded', (event) => {
       else return ops
     }).join('');
     return clipboardContent
+  }
+  function getAdjustedCursorPosition(range) {
+    let line = quill.getContents(0, range.index)
+    let currentIndex = range.index;
+    line = JSON.parse(JSON.stringify(line));
+    line?.ops?.map(ops => {
+      if(ops.attributes && ops.attributes.button) {
+        currentIndex = currentIndex + ops.attributes.button.url.length - 5;
+        currentIndex += `&t=${convertTimeStamp(ops.insert)}`.length;
+      }
+    })
+    return currentIndex;
   }
 });
 function handleSave() {
