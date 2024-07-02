@@ -7,108 +7,137 @@ document.addEventListener('DOMContentLoaded', (event) => {
             //     ['bold', 'italic', 'underline'],
             //     ['link', 'image', 'video']
             // ]
-        }
+        },
+        formats: ['button'],
+        // Sanitize the content to allow specific tags
+        // sanitize: {
+        //     // List of allowed tags
+        //     allowedTags: ['button'],
+        //     // List of allowed attributes
+        //     allowedAttributes: {
+        //         button: ['class', 'type', 'video-url']
+        //     }
+        // }
     });
-    if(localStorage.getItem('edit') === 'true'){
+
+
+    const Inline = Quill.import('blots/inline');
+
+    class ButtonBlot extends Inline {
+        static create(value) {
+          let node = super.create();
+          node.setAttribute('class', 'custom-button');
+        //   node.innerHTML = value.text;
+          node.setAttribute('video-url', value.url); // Set custom attribute
+          node.onclick = playVideo
+          return node;
+        }
+      
+        static formats(node) {
+          return {
+            // text: node.innerHTML,
+            url: node.getAttribute('video-url') // Retrieve custom attribute
+          };
+        }
+      }
+      
+      ButtonBlot.blotName = 'button';
+      ButtonBlot.tagName = 'button';
+      Quill.register(ButtonBlot);
+
+
+
+    document.addEventListener('paste', (event) => {
+        event.preventDefault();
+        var clipboardData = event.clipboardData || window.clipboardData;
+        var dataToPaste = (getQuillContents()) + clipboardData.getData('Text');
+        const regex = /(https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)(?:&t=|\?t=)?(\d+)?)/g;
+
+        var modifiedData = dataToPaste.replace(regex, match => {
+
+            return `<button video-url="${match}">${getYouTubeTimestamp(match)}</button>`
+        })
+        modifiedData = modifiedData.replace(/\n/g, '<br>');
+        const delta = quill.clipboard.convert(modifiedData);
+        delta.ops = [{insert: " "}, ...delta.ops, {insert: " "}]
+        quill.setContents(delta, 'silent');
+    })
+    document.addEventListener('copy', (event) => {
+        event.preventDefault();
+        const clipboardContent = getQuillContents();
+        event.clipboardData.setData('text/plain', clipboardContent);
+    })
+    
+    if (localStorage.getItem('edit') === 'true') {
         const data = localStorage.getItem('editor');
         const delta = quill.clipboard.convert(data);
         quill.setContents(delta, 'silent');
         localStorage.removeItem('edit');
     }
-
-
-
-    class ButtonBlot extends Inline {
-        static create(value) {
-            let node = super.create();
-            node.setAttribute('contenteditable', false);
-            node.style.display = 'inline';
-            node.innerHTML = value.text
-            node.setAttribute('video-id', value.videoId)
-            node.setAttribute('video-timestamp', value.timestamp)
-            node.addEventListener('click', () => playVideo(value.videoId, value.timestamp))
-            return node;
-            // let node = super.create();
-            // node.setAttribute('contenteditable', false);
-            // node.innerHTML = '<button id="custom-button-in-editor">Click me</button>';
-            // node.querySelector('button').addEventListener('click', function () {
-            //     alert('Button inside editor clicked!');
-            // });
-            // return node;
+    function getQuillContents(){
+        const selection = quill.getSelection();
+        var clipboardContent;
+        if(selection){
+            clipboardContent = quill.getContents(selection.index, selection.length);
         }
-        static value(node) {
-            return node.innerHTML;
+        else{
+            clipboardContent = quill.getContents();
         }
-    }
-    ButtonBlot.blotName = 'button';
-    ButtonBlot.tagName = 'button';
-    ButtonBlot.className = 'custom-button';
-    Quill.register(ButtonBlot);
-
-
-    quill.clipboard.addMatcher(Node.ELEMENT_NODE, function (node, delta) {
-        if (node.tagName === 'IFRAME' && node.src.startsWith('https://www.youtube.com/embed/')) {
-            return delta.compose({ video: node.src });
-        }
-        return delta;
-    });
-
-    quill.clipboard.addMatcher(Node.TEXT_NODE, function (node, delta) {
-        const regex = /(https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)(?:&t=|\?t=)?(\d+)?)/g;
-        const matches = [...node.data.matchAll(regex)];
-
-        if (matches.length > 0) {
-            delta.ops = []; // Clear existing ops
-            let remainingText = node.data;
-
-            matches.forEach((match) => {
-                const parts = remainingText.split(match[0]);
-                if (parts[0]) {
-                    delta.insert(parts[0]);
-                }
-
-                const videoId = match[2];
-                const timestamp = match[3];
-
-                if (timestamp) {
-                      const minutes = Math.floor(timestamp / 60);
-                      const seconds = timestamp % 60;
-                      const timeText = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-                      const linkText = `${timeText}`;
-                    const range = quill.getLength();
-                    quill.insertEmbed(range, 'button', {text:linkText, videoId, timestamp });
-
-                    //   delta.insert({ text: linkText, attributes: { 'class': 'youtube-timestamp', 'data-video-url': videoUrl, 'data-timestamp': timestamp, link: 'https://www.google.com' } });
-                } else {
-                    const videoEmbed = `https://www.youtube.com/embed/${videoId}`;
-                    delta.insert({ video: videoEmbed });
-                }
-
-                remainingText = parts.slice(1).join(match[0]);
-            });
-
-            if (remainingText) {
-                delta.insert(remainingText);
-            }
-        }
-        return delta;
-    });
-
-    document.querySelector('#editor-container').addEventListener('click', (event) => {
-        if (event.target.classList.contains('youtube-timestamp')) {
-            const videoUrl = event.target.getAttribute('data-video-url');
-            const timestamp = event.target.getAttribute('data-timestamp');
-            playVideo(videoUrl, timestamp);
-        }
-    });
-
-    function playVideo(videoId, timestamp) {
-        const iframe = document.getElementById("external-player");
-        const url = `https://www.youtube.com/embed/${videoId}?start=${timestamp}&autoplay=1`
-        iframe.src = url;
+        clipboardContent = JSON.parse(JSON.stringify(clipboardContent));
+        clipboardContent = clipboardContent?.ops?.map(ops => {
+            if(ops.attributes && ops.attributes.button) return ops.attributes.button.url
+            else if(ops.insert) return ops.insert;
+            else return ops
+        }).join('');
+        return clipboardContent
     }
 });
-function handleSave(){
+function handleSave() {
     const editor = document.getElementById('editor')
     localStorage.setItem('editor', editor.innerHTML);
 }
+function getYouTubeTimestamp(url) {
+    const urlObj = new URL(url);
+    let timeParam = urlObj.searchParams.get('t') || urlObj.searchParams.get('start');
+    
+    if (!timeParam) {
+      const match = urlObj.pathname.match(/t=([0-9]+m[0-9]+s|[0-9]+s?)/);
+      if (match) timeParam = match[1];
+    }
+  
+    if (!timeParam) return '00:00';
+  
+    let seconds = 0;
+    if (timeParam.includes('m')) {
+      const parts = timeParam.split('m');
+      seconds += parseInt(parts[0], 10) * 60;
+      if (parts[1]) seconds += parseInt(parts[1].replace('s', ''), 10);
+    } else if (timeParam.includes('s')) {
+      seconds += parseInt(timeParam.replace('s', ''), 10);
+    } else {
+      seconds += parseInt(timeParam, 10);
+    }
+  
+    const minutes = Math.floor(seconds / 60);
+    seconds = seconds % 60;
+    
+    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  }
+  function playVideo(event){
+    const url = event.target.getAttribute('video-url');
+    const time = convertTimeStamp(event.target.innerHTML);
+    document.getElementById('external-player').setAttribute('src', `https://www.youtube.com/embed/${getYouTubeVideoId(url)}?start=${time}&autoplay=1`)
+  }
+
+  function convertTimeStamp(time){
+    const arr = time.split(':').reverse();
+    var seconds = 0;
+    const multiplier = [1, 60, 3600];
+    arr.map((t, i) => {seconds = seconds + (t * multiplier[i])})
+    return seconds;
+  }
+  function getYouTubeVideoId(url) {
+    const regExp = /^(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+    const match = url.match(regExp);
+    return match ? match[1] : null;
+  }

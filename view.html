@@ -9,6 +9,17 @@
         .ql-hidden {
             display: none;
         }
+
+        #player {
+            width: 35%;
+        }
+
+        #moments {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 30px;
+        }
     </style>
     <link href="./index.css" rel="stylesheet">
 </head>
@@ -17,7 +28,7 @@
     <button onclick="handleEdit()">Edit</button>
     <div class="wrapper">
         <div id="editor"></div>
-        <div>
+        <div id="player">
             <iframe class="black-frame" id="external-player"></iframe>
             <div id="moments"></div>
         </div>
@@ -28,32 +39,25 @@
         setTimeout(() => {
             document.querySelectorAll('.custom-button').forEach(async item => {
                 item.onclick = playVideo
-                const videoId = item.getAttribute('video-id');
+                const videoId = getYouTubeVideoId(item.getAttribute('video-url'));
                 // const moment = { videoId, timestamp: , title:  };
-                
+
                 const button = document.createElement('button');
                 button.innerText = `${await getTitle(videoId)} ${item.innerHTML}`
                 button.setAttribute('class', 'custom-button')
-                button.setAttribute('video-id', videoId);
-                button.setAttribute('video-timestamp', item.getAttribute('video-timestamp'))
-                button.onclick=playVideo
+                button.setAttribute('video-url', item.getAttribute('video-url'));
+                // button.setAttribute('video-timestamp', convertTimeStamp(item.innerHTML.split(' ')[item.innerHTML.split(' ').length - 1]))
+                button.onclick = playVideo
 
                 document.getElementById('moments').appendChild(button);
             })
         }, 1000)
+
         const data = localStorage.getItem('editor');
         document.getElementById('editor').innerHTML = data.replaceAll('contenteditable="true"', '')
         function handleEdit() {
             localStorage.setItem('edit', 'true')
             window.location.href = '/index.html'
-        }
-        function playVideo(event) {
-            const { target } = event;
-            const videoId = target.getAttribute('video-id');
-            const timestamp = target.getAttribute('video-timestamp')
-            const iframe = document.getElementById("external-player");
-            const url = `https://www.youtube.com/embed/${videoId}?start=${timestamp}&autoplay=1`
-            iframe.src = url;
         }
         
         async function getTitle(videoId) {
@@ -65,6 +69,25 @@
                 return resp.items[0].snippet.title
             }
             return 'Untitled'
+        }
+        function playVideo(event) {
+            const url = event.target.getAttribute('video-url');
+            const time = convertTimeStamp(convertTimeStamp(event.target.innerHTML.split(' ')[event.target.innerHTML.split(' ').length - 1]));
+            document.getElementById('external-player').setAttribute('src', `https://www.youtube.com/embed/${getYouTubeVideoId(url)}?start=${time}&autoplay=1`)
+        }
+
+        function convertTimeStamp(time) {
+            if (typeof time === 'number') return time;
+            const arr = time.split(':').reverse();
+            var seconds = 0;
+            const multiplier = [1, 60, 3600];
+            arr.map((t, i) => { seconds = seconds + (t * multiplier[i]) })
+            return seconds;
+        }
+        function getYouTubeVideoId(url) {
+            const regExp = /^(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+            const match = url.match(regExp);
+            return match ? match[1] : null;
         }
     </script>
 </body>
