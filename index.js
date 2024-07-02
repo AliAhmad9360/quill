@@ -51,23 +51,25 @@ document.addEventListener('DOMContentLoaded', (event) => {
     event.preventDefault();
     const contents = getQuillContents()
     quill.focus();
-    // let position = quill.getSelection().index;
-    const position = getAdjustedCursorPosition(quill.getSelection())
-   
-
-
+    let position = getAdjustedCursorPosition(quill.getSelection())
     var clipboardData = event.clipboardData || window.clipboardData;
     const copiedCotents = clipboardData.getData('Text');
     var dataToPaste = contents.substring(0, position) + copiedCotents + contents.substring(position);
+    position += copiedCotents.length
+    debugger
     const regex = /(https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)(?:&t=|\?t=)?(\d+)?)/g;
     // debugger
     var modifiedData = dataToPaste.replace(regex, match => {
       return `<button video-url="${match}">${getYouTubeTimestamp(match)}</button>`
     })
-    modifiedData = modifiedData.replace(/\n/g, '<br>');
+    modifiedData = modifiedData.replace(/\n/g, '<br>').replaceAll('</button>s', '</button>');
     const delta = quill.clipboard.convert(modifiedData);
-    delta.ops = [{ insert: " " }, ...delta.ops, { insert: " " }]
+    delta.ops = [...delta.ops,{insert: ' '}]
     quill.setContents(delta, 'silent');
+    setTimeout(() => {
+      quill.setSelection(position)
+    }, 10)
+
   })
   document.addEventListener('copy', (event) => {
     event.preventDefault();
@@ -158,7 +160,6 @@ function playVideo(event) {
   const time = convertTimeStamp(event.target.innerHTML);
   document.getElementById('external-player').setAttribute('src', `https://www.youtube.com/embed/${getYouTubeVideoId(url)}?start=${time}&autoplay=1`)
 }
-
 function convertTimeStamp(time) {
   const arr = time.split(':').reverse();
   var seconds = 0;
