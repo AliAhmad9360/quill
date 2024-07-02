@@ -8,16 +8,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
       //     ['link', 'image', 'video']
       // ]
     },
-    formats: ['button'],
-    // Sanitize the content to allow specific tags
-    // sanitize: {
-    //     // List of allowed tags
-    //     allowedTags: ['button'],
-    //     // List of allowed attributes
-    //     allowedAttributes: {
-    //         button: ['class', 'type', 'video-url']
-    //     }
-    // }
+    // formats: ['button'],
   });
 
 
@@ -56,9 +47,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
     const copiedCotents = clipboardData.getData('Text');
     var dataToPaste = contents.substring(0, position) + copiedCotents + contents.substring(position);
     position += copiedCotents.length
-    debugger
     const regex = /(https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)(?:&t=|\?t=)?(\d+)?)/g;
-    // debugger
     var modifiedData = dataToPaste.replace(regex, match => {
       return `<button video-url="${match}">${getYouTubeTimestamp(match)}</button>`
     })
