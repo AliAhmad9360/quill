@@ -45,6 +45,10 @@ document.addEventListener('DOMContentLoaded', (event) => {
     let position = getAdjustedCursorPosition(quill.getSelection())
     var clipboardData = event.clipboardData || window.clipboardData;
     const copiedCotents = clipboardData.getData('Text');
+    
+
+
+
     var dataToPaste = contents.substring(0, position) + copiedCotents + contents.substring(position);
     position += copiedCotents.length
     const regex = /(https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)(?:&t=|\?t=)?(\d+)?)/g;
@@ -52,8 +56,9 @@ document.addEventListener('DOMContentLoaded', (event) => {
       return `<button video-url="${match}">${getYouTubeTimestamp(match)}</button>`
     })
     modifiedData = modifiedData.replace(/\n/g, '<br>').replaceAll('</button>s', '</button>');
+    modifiedData = modifiedData.replace(/<\/button>\s*<button/g, '</button>&nbsp; <button');
     const delta = quill.clipboard.convert(modifiedData);
-    delta.ops = [...delta.ops,{insert: ' '}]
+    delta.ops = [...delta.ops, {insert: ' '}]
     quill.setContents(delta, 'silent');
     setTimeout(() => {
       quill.setSelection(position)
@@ -101,13 +106,15 @@ document.addEventListener('DOMContentLoaded', (event) => {
     return clipboardContent
   }
   function getAdjustedCursorPosition(range) {
+    debugger
     let line = quill.getContents(0, range.index)
     let currentIndex = range.index;
     line = JSON.parse(JSON.stringify(line));
     line?.ops?.map(ops => {
       if(ops.attributes && ops.attributes.button) {
         currentIndex = currentIndex + ops.attributes.button.url.length - 5;
-        currentIndex += `&t=${convertTimeStamp(ops.insert)}`.length;
+        // if(new URL())
+        // currentIndex += `&t=${convertTimeStamp(ops.insert)}`.length;
       }
     })
     return currentIndex;

@@ -12,6 +12,8 @@
 
         #player {
             width: 35%;
+            position: fixed;
+            right: 0;
         }
 
         #moments {
@@ -19,6 +21,8 @@
             flex-direction: column;
             gap: 10px;
             padding: 30px;
+            max-height: 250px;
+            overflow-y: scroll;
         }
     </style>
     <link href="./index.css" rel="stylesheet">
@@ -36,8 +40,10 @@
     </div>
     <script>
         const momentsList = [];
-        setTimeout(() => {
-            document.querySelectorAll('.custom-button').forEach(async item => {
+        setTimeout(async () => {
+            const arr = document.querySelectorAll('.custom-button');
+            for(var i = 0; i < arr.length; i++){
+                const item = arr[i];
                 item.onclick = playVideo
                 const videoId = getYouTubeVideoId(item.getAttribute('video-url'));
                 // const moment = { videoId, timestamp: , title:  };
@@ -48,9 +54,8 @@
                 button.setAttribute('video-url', item.getAttribute('video-url'));
                 // button.setAttribute('video-timestamp', convertTimeStamp(item.innerHTML.split(' ')[item.innerHTML.split(' ').length - 1]))
                 button.onclick = playVideo
-
                 document.getElementById('moments').appendChild(button);
-            })
+            }
         }, 1000)
 
         const data = localStorage.getItem('editor');
