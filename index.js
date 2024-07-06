@@ -50,10 +50,13 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
 
     var dataToPaste = contents.substring(0, position) + copiedCotents + contents.substring(position);
-    position += copiedCotents.length
     const regex = /(https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)(?:&t=|\?t=)?(\d+)?)/g;
+    position += copiedCotents.replace(regex, match => getYouTubeTimestamp(match)).length
+
+
+
     var modifiedData = dataToPaste.replace(regex, match => {
-      return `<button video-url="${match}">${getYouTubeTimestamp(match)}</button>`
+      return `<button video-url="${match}">${getYouTubeTimestamp(match)}</button>&nbsp;`
     })
     modifiedData = modifiedData.replace(/\n/g, '<br>').replaceAll('</button>s', '</button>');
     modifiedData = modifiedData.replace(/<\/button>\s*<button/g, '</button>&nbsp; <button');
@@ -106,15 +109,12 @@ document.addEventListener('DOMContentLoaded', (event) => {
     return clipboardContent
   }
   function getAdjustedCursorPosition(range) {
-    debugger
     let line = quill.getContents(0, range.index)
     let currentIndex = range.index;
     line = JSON.parse(JSON.stringify(line));
     line?.ops?.map(ops => {
       if(ops.attributes && ops.attributes.button) {
         currentIndex = currentIndex + ops.attributes.button.url.length - 5;
-        // if(new URL())
-        // currentIndex += `&t=${convertTimeStamp(ops.insert)}`.length;
       }
     })
     return currentIndex;
@@ -127,12 +127,10 @@ function handleSave() {
 function getYouTubeTimestamp(url) {
   const urlObj = new URL(url);
   let timeParam = urlObj.searchParams.get('t') || urlObj.searchParams.get('start');
-
   if (!timeParam) {
     const match = urlObj.pathname.match(/t=([0-9]+m[0-9]+s|[0-9]+s?)/);
     if (match) timeParam = match[1];
   }
-
   if (!timeParam) return '00:00';
 
   let seconds = 0;
